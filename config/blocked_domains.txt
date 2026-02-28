@@ -1,0 +1,5 @@
+# Example blocked domains policy file
+# Format: one domain per line (wildcards supported)
+example-blocked.com
+*.ads-network.com
+malware-site.xyz
