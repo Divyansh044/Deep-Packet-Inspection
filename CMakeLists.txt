@@ -15,7 +15,7 @@ find_package(Threads REQUIRED)
 if(WIN32)
     # Npcap SDK path - adjust if needed
     set(PCAP_INCLUDE_DIR "D:/npcap-sdk-1.16/Include" CACHE STRING "Path to Npcap include files")
-    set(PCAP_LIBRARY "D:/npcap-sdk-1.16/Lib" CACHE STRING "Path to wpcap.lib")
+    set(PCAP_LIBRARY "D:/npcap-sdk-1.16/Lib/wpcap.lib" "D:/npcap-sdk-1.16/Lib/Packet.lib" CACHE STRING "Paths to Npcap libraries")
 else()
     # Unix/Linux
     find_package(PCAP REQUIRED)
