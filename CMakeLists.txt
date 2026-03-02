@@ -28,6 +28,7 @@ include_directories(${PCAP_INCLUDE_DIR})
 # Source files
 set(SOURCES
     src/main.cpp
+    src/packet_parser.cpp
 )
 
 # Create executable

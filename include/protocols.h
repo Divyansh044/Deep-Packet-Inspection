@@ -31,6 +31,9 @@
 // Platform-specific includes
 // ─────────────────────────────────────────────────────────────────────────────
 #ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX // Prevent Windows.h from defining min/max macros
+#endif
 // On Windows, Winsock2 gives us ntohs(), ntohl(), inet_ntoa(), etc.
 // ws2tcpip.h gives us inet_ntop() for converting IPs to readable strings.
 #include <winsock2.h>
@@ -76,8 +79,6 @@ struct EthernetHeader {
   uint16_t ether_type; // Protocol inside: 0x0800 = IPv4 (in network byte order)
 };
 
-#pragma pack(pop)
-
 // Ethernet type constants (in host byte order — we compare AFTER converting)
 constexpr uint16_t ETHERTYPE_IPV4 = 0x0800;
 constexpr uint16_t ETHERTYPE_IPV6 = 0x86DD;
@@ -120,7 +121,7 @@ constexpr int ETHERNET_HEADER_SIZE = 14;
  *    values: Windows=128, Linux=64.
  */
 
-#pragma pack(push, 1)
+// (packing still active from line 71)
 
 struct IPv4Header {
   // First byte contains TWO fields packed together (4 bits each):
@@ -144,7 +145,7 @@ struct IPv4Header {
   // Options may follow if ihl > 5, but we handle that dynamically
 };
 
-#pragma pack(pop)
+// (packing continues for remaining protocol headers)
 
 // IP protocol number constants
 constexpr uint8_t IP_PROTO_ICMP = 1;
@@ -172,7 +173,7 @@ constexpr uint8_t IP_PROTO_UDP = 17;
  *    3. Client → Server: ACK        ("Great, we're connected")
  */
 
-#pragma pack(push, 1)
+// (packing still active from line 71)
 
 struct TCPHeader {
   uint16_t src_port;       // Source port number (network byte order)
@@ -188,7 +189,7 @@ struct TCPHeader {
   uint16_t urgent_pointer; // Points to urgent data (rarely used)
 };
 
-#pragma pack(pop)
+// (packing continues for remaining protocol headers)
 
 // TCP flag bitmasks — use these to check individual flags
 // Example: if (tcp->flags & TCP_FLAG_SYN) { /* it's a SYN packet */ }
@@ -218,7 +219,7 @@ constexpr uint8_t TCP_FLAG_URG = 0x20; // Urgent data present
  *    UDP when speed matters more (DNS lookups, live video, gaming).
  */
 
-#pragma pack(push, 1)
+// (packing still active from line 71)
 
 struct UDPHeader {
   uint16_t src_port;  // Source port (network byte order)
@@ -227,7 +228,8 @@ struct UDPHeader {
   uint16_t checksum;  // Integrity check (optional in IPv4)
 };
 
-#pragma pack(pop)
+#pragma pack(                                                                  \
+    pop) // matches push at line 71 — all protocol headers above are packed
 
 constexpr int UDP_HEADER_SIZE = 8;
 
