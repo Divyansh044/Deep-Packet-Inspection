@@ -29,16 +29,27 @@ include_directories(${PCAP_INCLUDE_DIR})
 set(SOURCES
     src/main.cpp
     src/packet_parser.cpp
+    src/dns_parser.cpp
+    src/http_parser.cpp
+    src/tls_parser.cpp
 )
 
 # Create executable
 add_executable(dpi_engine ${SOURCES})
 
 # Link libraries
-target_link_libraries(dpi_engine PRIVATE 
-    Threads::Threads
-    ${PCAP_LIBRARY}
-)
+if(WIN32)
+    target_link_libraries(dpi_engine PRIVATE 
+        Threads::Threads
+        ${PCAP_LIBRARY}
+        ws2_32
+    )
+else()
+    target_link_libraries(dpi_engine PRIVATE 
+        Threads::Threads
+        ${PCAP_LIBRARY}
+    )
+endif()
 
 # Print configuration info
 message(STATUS "DPI Engine Configuration:")
