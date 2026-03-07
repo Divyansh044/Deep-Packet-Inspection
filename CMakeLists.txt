@@ -15,7 +15,10 @@ find_package(Threads REQUIRED)
 if(WIN32)
     # Npcap SDK path - adjust if needed
     set(PCAP_INCLUDE_DIR "D:/npcap-sdk-1.16/Include" CACHE STRING "Path to Npcap include files")
-    set(PCAP_LIBRARY "D:/npcap-sdk-1.16/Lib/wpcap.lib" "D:/npcap-sdk-1.16/Lib/Packet.lib" CACHE STRING "Paths to Npcap libraries")
+    set(PCAP_LIBRARY "D:/npcap-sdk-1.16/Lib/x64/wpcap.lib" "D:/npcap-sdk-1.16/Lib/x64/Packet.lib" CACHE STRING "Paths to Npcap libraries")
+    
+    # Export compile commands so IntelliSense/clangd can find pcap.h
+    set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 else()
     # Unix/Linux
     find_package(PCAP REQUIRED)
@@ -32,6 +35,8 @@ set(SOURCES
     src/dns_parser.cpp
     src/http_parser.cpp
     src/tls_parser.cpp
+    src/packet_capture.cpp
+    src/policy_engine.cpp
 )
 
 # Create executable

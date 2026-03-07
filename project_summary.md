@@ -1,94 +1,97 @@
-# Deep Packet Inspection (DPI) Engine - Beginner's Guide & Project Summary
+# Deep Packet Inspection (DPI) Engine - Comprehensive Step-by-Step Guide
 
-This document explains everything we have built in Phase 1 of the DPI Engine project. It is written for someone with zero prior knowledge of networking or C++.
-
----
-
-## 1. What is Deep Packet Inspection (DPI)?
-
-**The Real-World Analogy: The Post Office**
-Imagine a regular post office (a normal firewall). It looks at the outside of an envelope: it sees who sent the letter (Return Address) and who is receiving it (Mailing Address). If the post office has a rule saying "No mail to BadTown," it throws the letter away. That's traditional packet filtering.
-
-Deep Packet Inspection (DPI) is like a **security guard who opens the envelope and reads the letter inside**. Instead of just looking at the addresses, the guard checks if the letter contains a secret code, illegal instructions, or requests to a forbidden website. If it does, the guard stops the letter.
-
-**What our project does:**
-Our C++ engine captures raw data packets flowing through the network, opens them up layer by layer, reads the contents (like which website the user is trying to visit), and will eventually block or alert on bad traffic.
+This document is a complete, beginner-friendly guide to everything we have built in our Deep Packet Inspection (DPI) engine up to Phase 2 (Packet Capture). It breaks down complex networking and C++ concepts into simple analogies, terminology, and real-world workflows.
 
 ---
 
-## 2. The Concepts You Need to Study
+## 1. The Big Picture: What is DPI?
 
-To understand this project fully, you need to understand how data travels on the internet. It uses the **OSI Model / TCP/IP Layered Model**.
+**The Real-World Analogy: The Post Office vs. The Secret Agent**
+*   **A Standard Firewall (The Post Office):** It looks at the outside of an envelope. It reads the Return Address (Source IP) and the Mailing Address (Destination IP). If a rule says "No mail to BadTown," the firewall throws the letter away without ever opening it.
+*   **Deep Packet Inspection (The Secret Agent):** DPI doesn't just look at the envelope; it carefully cuts the envelope open, pulls out the letter, and reads it. It checks if the letter contains malicious instructions, requests for stolen data, or attempts to reach a blocked website. If it finds something bad, it intercepts the letter.
 
-Data is wrapped in multiple "envelopes" (layers) before it is sent over the wire. When we receive data, we have to "peel" these layers off one by one.
+**What Our Engine Does:**
+Our C++ engine intercepts raw data packets flowing over a network, peels them open layer by layer, translates the raw binary numbers into readable text (like website names), checks those names against a blocklist, and triggers an alert if the traffic is forbidden.
 
-### The Envelopes (The Layers)
+---
 
-1.  **Layer 2: Ethernet (The Outer Envelope)**
-    *   **What it does:** Gets data from your computer to your home router (the next physical hop).
-    *   **Key Term - MAC Address:** Every network card (Wi-Fi or Ethernet port) in the world has a 100% unique ID called a MAC address (e.g., `AA:BB:CC:DD:EE:FF`). Ethernet uses this to physically deliver the packet over the local cable or airwaves.
+## 2. Core Concepts: The OSI Envelopes
 
-2.  **Layer 3: IP (Internet Protocol) (The Mailing Address)**
-    *   **What it does:** Gets data across the global internet, from your router to Google's servers.
-    *   **Key Term - IP Address:** The logical address on the internet (e.g., `192.168.1.5` or `142.250.190.46`). It tells routers *where* in the world the packet needs to go.
+To understand this project, you must understand how data travels on the internet. Data is wrapped in multiple "envelopes" (called headers) before being sent. 
+
+### The Layers of a Packet
+When we receive a packet, it looks like a russian nesting doll of envelopes.
+
+1.  **Layer 2: Ethernet (The Hardware Envelope)**
+    *   **What it does:** Moves data physically from one machine to the immediate next machine on the same local network (e.g., from your laptop to your home Wi-Fi router).
+    *   **Key Term - MAC Address:** Every network card (Wi-Fi or Ethernet port) in the world has a 100% unique, physical ID called a MAC address (e.g., `AA:BB:CC:DD:EE:FF`). Ethernet uses this to deliver the packet locally.
+
+2.  **Layer 3: IP (Internet Protocol) (The Global Mailing Address)**
+    *   **What it does:** Moves data across the world, from your home router all the way to Google's servers.
+    *   **Key Term - IP Address:** The logical internet address (e.g., `192.168.1.5` for your laptop, `142.250.190.46` for Google). It tells routers exactly where to send the packet.
 
 3.  **Layer 4: TCP / UDP (The Delivery Method)**
-    *   **What it does:** Once the packet reaches the correct computer (IP address), how does it know *which app* (Chrome, Spotify, Skype) gets the data? It uses **Ports**.
-    *   **Key Term - Port:** Like an apartment number in a building. (e.g., Port 80 = Web browsing, Port 443 = Secure web, Port 53 = DNS).
-    *   **TCP (Transmission Control Protocol):** The reliable delivery method. Like sending a package with tracked, guaranteed delivery. Used for web pages (HTTP/HTTPS) because missing a piece of the code breaks the site.
-    *   **UDP (User Datagram Protocol):** The fast delivery method. Like throwing a tennis ball. It's fast, but if it drops, no one cares. Used for live video calls or quick lookups (DNS).
+    *   **What it does:** Once the packet gets to the correct computer (IP address), how does it know *which application* gets the data? It uses **Ports**.
+    *   **Key Term - Port:** Like an apartment number inside a building. Web browsers use Port 80 or 443; gaming and video calls use other ports.
+    *   **TCP (Transmission Control Protocol):** The reliable, tracked delivery. Like registered mail. It guarantees all data arrives strictly in order. Used for loading web pages where missing a single image breaks the site.
+    *   **UDP (User Datagram Protocol):** The fast, reckless delivery. Like throwing a tennis ball. It's incredibly fast, but there are no guarantees it gets caught. Used for live video or quick lookups (like asking "What is Google's IP address?").
 
-4.  **Layer 7: Application (The Actual Letter inside)**
-    *   **What it does:** The actual meaning of the data. Is it asking for a webpage (HTTP)? Is it asking for an IP address (DNS)? Is it a secure connection (TLS/HTTPS)?
-
-**The Parsing Workflow (Peeling the Onion):**
-Raw Bytes -> [Ethernet] -> [IP] -> [TCP or UDP] -> [HTTP, DNS, or TLS Payload/Data]
+4.  **Layer 7: Application Data (The Actual Letter)**
+    *   **What it is:** The actual content is stored inside the final envelope. Is it an HTTP web request? Is it an encrypted HTTPS connection? Is it a DNS lookup? Our engine cares most about this layer.
 
 ---
 
-## 3. What We Have Built So Far (Phase 1: Parsers)
+## 3. The Architecture: What We Built So Far
 
-We built the tools to take raw, meaningless 1s and 0s and turn them into readable information.
+We have built Phase 1 (The Translators/Parsers) and start of Phase 2 (The Catcher/Packet Capture). 
 
-### Step 1: `protocols.h` (The Blueprints)
-*   **What it is:** Defines the exact layout of the envelopes (Ethernet, IP, TCP, UDP). We told C++ exactly how many bytes each piece of information takes. (e.g., "The first 6 bytes are the Destination MAC, the next 6 are the Source MAC," etc.).
-*   **Key C++ Concept - Struct Casting:** We don't copy the raw data. We "overlay" our blueprint (struct) directly onto the raw memory. It's like putting a transparent stencil over a page of random letters to read the hidden message instantly. This makes the code extremely fast.
-*   **Key Concept - Endianness (Byte Order):** Computers read memory backwards compared to networks. We use tools like `ntohs()` (Network to Host Short) to flip the numbers the right way around so our computer understands them.
+### Step 1: `protocols.h` (The Blueprints & Memory Mapping)
+*   **What we did:** We defined exactly what the Layer 2, Layer 3, and Layer 4 envelopes look like in memory using C++ `structs`. We told C++ exactly how many bytes each piece of info takes.
+*   **Key Concept - Zero-Copy Parsing (Struct Casting):**
+    *   *Analogy:* Imagine copying a whole book by hand (slow) versus just sliding a clear plastic translation sheet over the book to read it instantly (fast).
+    *   *Reality:* We do not copy the packet data. We take a raw block of computer memory and tell C++, "Overlay my Ethernet blueprint right here." This is incredibly fast and memory-efficient.
+*   **Key Concept - Endianness (Byte Ordering):** 
+    *   *The Problem:* Your laptop processor reads numbers from right-to-left (Little-Endian). The Internet sends numbers left-to-right (Big-Endian). If we see `0x00 0x50` (Port 80) on the internet, the laptop might misread it as Port 20480!
+    *   *The Fix:* We use functions like `ntohs()` (Network-To-Host Short) to flip the bytes before reading them.
 
-### Step 2: `packet_parser.cpp` (The Onion Peeler)
-*   **What it is:** The main engine that uses the blueprints from Step 1.
+### Step 2: `packet_parser.cpp` (The Envelope Opener)
+*   **What we did:** We wrote the function that takes a raw packet and unboxes it layer by layer.
 *   **Workflow:**
-    1.  It takes raw data.
-    2.  Reads the first 14 bytes as the **Ethernet** envelope.
-    3.  Throws that envelope away, moves the "pointer" (our reading cursor) forward, and reads the **IP** envelope.
-    4.  Throws that away, moves forward, and reads the **TCP** or **UDP** envelope.
-    5.  Whatever is left over is the **Payload** (The Layer 7 actual data).
+    1. Look at the first 14 bytes (Ethernet). Record the MAC addresses.
+    2. Move the reading pointer exactly 14 bytes forward. 
+    3. Look at the next 20+ bytes (IP). Record the IP addresses. Read the `Header Length` to know how big the IP envelope is.
+    4. Move the reading pointer forward. Look at the next bytes (TCP or UDP). Record the Ports. Read the TCP `Data Offset` to find where the header ends.
+    5. Everything that remains is handed off to Application layer parsers (Steps 3, 4, 5).
 
 ### Step 3: `dns_parser.cpp` (The Phonebook Reader)
-*   **What it is:** DNA (Domain Name System) translates names like "google.com" into IP numbers. Our parser reads DNS packets to see *what websites the user is asking for*. This works on UDP Port 53.
-*   **Why it's important:** It's usually sent in plain text (unencrypted). Even if the user is visiting a secure website, their initial DNS request tells us where they are going.
-*   **The Tricky Part - Compression:** DNS tries to save space. If "google.com" appears twice, the second time it just says "Look at byte #12". Our code has to follow these pointers without getting stuck in an infinite loop.
+*   **What it is:** DNS changes names like "youtube.com" into computer IP addresses. It runs on UDP Port 53.
+*   **Why it's important:** It is usually Unencrypted. Even if a user tries to visit a secured `https://` site, their computer must first ask DNS for the IP address in plain text. By intercepting DNS, we know exactly what website they want to visit.
+*   **The Tricky Part - DNS Label Compression & Pointers:**
+    *   DNS tries to save space on the network. Instead of sending `"www.example.com"`, it sends `[3]www[7]example[3]com[0]`. 
+    *   If it wants to say `"api.example.com"` later in the same packet, it sends `[3]api` followed by a **Pointer** that says "Jump back up to byte #25 and read the rest from there." Our code has to follow these jumps without getting trapped in an infinite loop!
 
-### Step 4: `http_parser.cpp` (The Web Request Reader)
-*   **What it is:** Reads plain-text web browsing traffic. It looks for commands like `GET /index.html`.
-*   **Why it's important:** We search for the `Host:` label. This explicitly tells us which website domain the user is visiting (e.g., `Host: www.badwebsite.com`).
-*   **The Tricky Part:** Because it's plain text, we have to treat the raw bytes as a String of characters and use text-search tools (like searching for the word "Host:") instead of fixed byte positions.
+### Step 4: `http_parser.cpp` (The Web Request Scanner)
+*   **What it is:** Parses plain text, unencrypted website traffic (HTTP, Port 80).
+*   **Workflow:** We take the raw payload, turn it into a regular string, and search for the `Host:` label (e.g., `Host: www.malware.com`). 
+*   **Key Concept - Virtual Hosting:** A single computer server might host 1,000 different websites on the *same IP Address*. The `Host:` header is the only way a server knows which specific website the user requested. We extract this to see if the domain is blocked.
 
-### Step 5: `tls_parser.cpp` (The HTTPS Loophole Exploiter)
-*   **What it is:** TLS is the encryption that makes HTTPS secure (putting the padlock icon in your browser). We *cannot* read the data inside a TLS packet. It's scrambled.
-*   **The Loophole - SNI (Server Name Indication):** Before the client (browser) and server agree on a secret password to scramble the data, they must have an initial "Handshake." During this Handshake, the client sends a message called the **ClientHello** in *plain text*. Inside the ClientHello is the **SNI**—the name of the website it wants to talk to (e.g., "netflix.com").
-*   **The Tricky Part:** The ClientHello is a nightmare to read. It's composed of many variable-length boxes nested inside each other. Our parser has to meticulously read the length of Box A, skip over Box A, find Box B, skip it, until it finally digs down to the Extensions box where the SNI (Domain Name) lives.
+### Step 5: `tls_parser.cpp` (The HTTPS Encryption Loophole)
+*   **What it is:** Over 95% of traffic today uses HTTPS (TLS Encryption). Traditional firewalls are blinded by it. 
+*   **The Loophole - SNI (Server Name Indication):** Before encryption starts, the client (your browser) and the server must do a handshake to set up the secret keys. During this unencrypted handshake, the browser sends a **ClientHello** message saying, "Hi, I want to talk to netflix.com, please give me your certificate."
+*   **What we do:** Our parser dives extremely deep into this binary ClientHello message, skips past random numbers, cipher lists, and session names (each is a variable size, forcing us to carefully measure and skip them), until it finds the **SNI Extension** and extracts the domain name in plain text!
+
+### Step 6: `packet_capture.cpp` (The Packet Snatcher)
+*   **What it is:** Up until now, we taught our engine *how* to read packets, but it couldn't actually *get* them. Step 6 uses an industry-standard library called `libpcap` (or `Npcap` on Windows—the same engine Wireshark uses) to grab packets out of thin air.
+*   **The Power - Unified Data Flow:** Our wrapper hides the ugly C-level code and provides two simple options: `openLive()` and `openFile()`. From the rest of our C++ engine's perspective, reading a saved `.pcap` testing file is entirely identical to intercepting live Wi-Fi traffic.
+*   **Key Concept - Promiscuous Mode:** Normally, your Wi-Fi card ignores all invisible internet traffic that is floating through the air unless it is explicitly addressed to your computer. When we turn on "Promiscuous Mode," we tell the Wi-Fi card: "Listen to everyone's conversation in the entire room, even if they aren't talking to you." 
+*   **Key Concept - BPF Filters:** If we captured every single packet on a busy network, our app might freeze from the overload. We compile rules called BPFs (Berkeley Packet Filters) like `"tcp port 80 or udp port 53"`. These rules are handed directly to the computer's Operating System Kernel (the deepest level of the computer). The Kernel acts like a bouncer at a club—it drops packets that don't match the rule instantly, meaning our C++ application only ever sees the traffic it actually cares about.
+*   **Key Concept - C-to-C++ Callback Bridge:** `libpcap` is written in pure C, and C doesn't understand modern C++ classes. The packet capture runs in an infinite loop, and whenever it catches a packet, it has to safely hand it back to our modern C++ engine using a clever pointer casting trick (our `globalPacketHandler` bridge).
 
 ---
 
-## 4. Summary of Where We Are
+## 4. What's Next? (Phase 2 Continued: The Brain)
 
-We have completely built the "Eyes" of the system.
-If you feed our code raw network bytes, it can accurately report:
-*   "This packet is going from IP A to IP B."
-*   "It is using the TCP protocol to port 443."
-*   "Inside, it contains an HTTPS connection request to 'youtube.com'."
+Now that our system has **Eyes** (Parsers) and **Hands** (Packet Capture), we need to give it a **Brain** (The Policy Engine) and a **Mouth** (The Logger).
 
-**What is Next (Phase 2 & 3):**
-Now that our system has eyes, we need to give it a **Brain**.
-We will build the **Packet Capture** logic (to grab live traffic off your Wi-Fi card) and the **Policy Engine** (the brain that takes the output of our parsers, checks it against a blocklist, and yells "ALERT!" if a forbidden website is seen).
+1.  **Step 7 (Policy Engine):** We will load your `config/blocked_domains.txt` into super-fast memory structures (Hash Maps). As our parsers extract DNS queries and TLS SNIs, the Brain will instantly compare them against the blocklist to see if it's a match.
+2.  **Step 8 (Logger & Main Logic):** We will tie everything together, add colored text output for the terminal (Red = Alert, Green = Normal), and create a graceful shutdown sequence that calculates statistics (like "150 DNS Packets parsed, 3 Threats Blocked") when you exit the app.

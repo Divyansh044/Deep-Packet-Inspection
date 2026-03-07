@@ -1,8 +1,72 @@
-build/
-*.exe
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
 *.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# CMake artifacts
+build/
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps/
+
+# IDE and OS specific files
+.vs/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+
+# Debug/Profiling
 *.pdb
 *.ilk
-*.lib
-*.dll
-.vs/
+*.idb
+*.gcno
+*.gcda
+*.gcov
+coverage.info
+
+# Custom PCAP/Config files
+pcap_files/*.pcap
+pcap_files/*.pcapng
+config/*.txt
+!config/blocked_domains.example.txt
+!config/blocked_ips.example.txt
+# Project Specific Defaults
+project_summary.md
