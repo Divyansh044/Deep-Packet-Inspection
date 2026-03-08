@@ -15,10 +15,13 @@
  * Mouth.
  */
 
+#include "../include/dns_parser.h"
+#include "../include/http_parser.h"
 #include "../include/logger.h"
 #include "../include/packet_capture.h"
 #include "../include/packet_parser.h"
 #include "../include/policy_engine.h"
+#include "../include/tls_parser.h"
 #include <csignal>
 #include <iostream>
 
@@ -34,6 +37,9 @@ Logger *g_logger = nullptr;
 PolicyEngine *g_policy = nullptr;
 PacketParser *g_parser = nullptr;
 PacketCapture *g_capture = nullptr;
+DnsParser *g_dns_parser = nullptr;
+HttpParser *g_http_parser = nullptr;
+TlsParser *g_tls_parser = nullptr;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GRACEFUL SHUTDOWN (Ctrl+C Handler)
@@ -76,6 +82,21 @@ void processPacketHandler(const uint8_t *packet_data, uint32_t packet_length,
     return;
   }
 
+  // 2.5 DEEP INSPECTION
+  // If we have an application payload, try to parse it
+  if (parsed.payload != nullptr && parsed.payload_length > 0) {
+    if (parsed.dest_port == 53 || parsed.src_port == 53) {
+      g_dns_parser->parse(parsed.payload, parsed.payload_length, parsed);
+    } else if (parsed.dest_port == 80 || parsed.src_port == 80) {
+      g_http_parser->parse(parsed.payload, parsed.payload_length, parsed);
+    } else if (parsed.dest_port == 443 || parsed.src_port == 443) {
+      g_tls_parser->parse(parsed.payload, parsed.payload_length, parsed);
+    }
+  }
+
+  // Update all statistics counters (per-app, per-protocol, detected domains)
+  g_logger->recordPacketStats(parsed);
+
   // Debug mode: Print every single parsed packet details to screen
   g_logger->debugPacket(parsed);
 
@@ -84,9 +105,12 @@ void processPacketHandler(const uint8_t *packet_data, uint32_t packet_length,
   Alert alert;
   if (g_policy->checkPacket(parsed, alert)) {
 
-    // 4. TRIGGER ALERT (The Mouth)
-    // The Policy Engine said "BAD!", so tell the user.
+    // 4. TRIGGER ALERT (The Mouth) — Policy Engine said "BAD!"
     g_logger->logAlert(alert, parsed);
+    g_logger->incrementDropped();
+  } else {
+    // Packet is clean — count it as forwarded
+    g_logger->incrementForwarded();
   }
 }
 
@@ -99,12 +123,18 @@ int main(int argc, char *argv[]) {
   PolicyEngine policy;
   PacketParser parser;
   PacketCapture capture;
+  DnsParser dns_parser;
+  HttpParser http_parser;
+  TlsParser tls_parser;
 
   // Link our global pointers for the callback and signal handler
   g_logger = &logger;
   g_policy = &policy;
   g_parser = &parser;
   g_capture = &capture;
+  g_dns_parser = &dns_parser;
+  g_http_parser = &http_parser;
+  g_tls_parser = &tls_parser;
 
   // Register Ctrl+C so we can print statistics when exiting
   signal(SIGINT, handleSignal);
@@ -179,6 +209,10 @@ int main(int argc, char *argv[]) {
     cout << "Run with --list to see available live interfaces.\n";
     return 1;
   }
+
+  // Set up the log file
+  string log_path = "../security_alerts.log";
+  logger.setLogFile(log_path);
 
   logger.info("Setting up Packet Capture layer (libpcap/Npcap)...");
 

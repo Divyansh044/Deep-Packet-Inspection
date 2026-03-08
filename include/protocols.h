@@ -176,13 +176,13 @@ constexpr uint8_t IP_PROTO_UDP = 17;
 // (packing still active from line 71)
 
 struct TCPHeader {
-  uint16_t src_port;       // Source port number (network byte order)
-  uint16_t dest_port;      // Destination port number (network byte order)
-  uint32_t seq_number;     // Sequence number (for ordering data)
-  uint32_t ack_number;     // Acknowledgment number
+  uint16_t src_port;   // Source port number (network byte order)
+  uint16_t dest_port;  // Destination port number (network byte order)
+  uint32_t seq_number; // Sequence number (for ordering data)
+  uint32_t ack_number; // Acknowledgment number
+  // Like the IP Header, bitfields are reversed on little-endian machines!
+  uint8_t reserved : 4;    // Reserved bits (always 0)
   uint8_t data_offset : 4; // Header length in 4-byte words (like IHL)
-  uint8_t reserved : 3;    // Reserved bits (always 0)
-  uint8_t ns : 1;          // ECN-nonce flag
   uint8_t flags;           // TCP flags: FIN, SYN, RST, PSH, ACK, URG
   uint16_t window_size;    // Flow control: how much data the sender can receive
   uint16_t checksum;       // Integrity check
@@ -260,7 +260,7 @@ struct ParsedPacket {
   std::string transport_proto; // "TCP" or "UDP"
 
   // === Layer 7 (Application) ===
-  std::string app_protocol; // "DNS", "HTTP", "TLS", or "Unknown"
+  std::string app_protocol = "Unknown"; // "DNS", "HTTP", "TLS", or "Unknown"
 
   // DNS-specific fields
   std::string dns_query; // e.g. "google.com"

@@ -1,3 +1,4 @@
 malware.com
 *.badads.net
 phishing-site.org
+youtube.com

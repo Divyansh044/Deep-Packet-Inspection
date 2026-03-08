@@ -70,3 +70,4 @@ config/*.txt
 !config/blocked_ips.example.txt
 # Project Specific Defaults
 project_summary.md
+security_alerts.log
