@@ -37,6 +37,7 @@ set(SOURCES
     src/tls_parser.cpp
     src/packet_capture.cpp
     src/policy_engine.cpp
+    src/logger.cpp
 )
 
 # Create executable

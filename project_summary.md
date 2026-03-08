@@ -45,14 +45,7 @@ When we receive a packet, it looks like a russian nesting doll of envelopes.
 
 We have built Phase 1 (The Translators/Parsers) and start of Phase 2 (The Catcher/Packet Capture). 
 
-### Step 1: `protocols.h` (The Blueprints & Memory Mapping)
-*   **What we did:** We defined exactly what the Layer 2, Layer 3, and Layer 4 envelopes look like in memory using C++ `structs`. We told C++ exactly how many bytes each piece of info takes.
-*   **Key Concept - Zero-Copy Parsing (Struct Casting):**
-    *   *Analogy:* Imagine copying a whole book by hand (slow) versus just sliding a clear plastic translation sheet over the book to read it instantly (fast).
-    *   *Reality:* We do not copy the packet data. We take a raw block of computer memory and tell C++, "Overlay my Ethernet blueprint right here." This is incredibly fast and memory-efficient.
-*   **Key Concept - Endianness (Byte Ordering):** 
-    *   *The Problem:* Your laptop processor reads numbers from right-to-left (Little-Endian). The Internet sends numbers left-to-right (Big-Endian). If we see `0x00 0x50` (Port 80) on the internet, the laptop might misread it as Port 20480!
-    *   *The Fix:* We use functions like `ntohs()` (Network-To-Host Short) to flip the bytes before reading them.
+### 
 
 ### Step 2: `packet_parser.cpp` (The Envelope Opener)
 *   **What we did:** We wrote the function that takes a raw packet and unboxes it layer by layer.
@@ -89,9 +82,21 @@ We have built Phase 1 (The Translators/Parsers) and start of Phase 2 (The Catche
 
 ---
 
-## 4. What's Next? (Phase 2 Continued: The Brain)
+## 4. Phase 2 Completion: The Brain and the Mouth
 
-Now that our system has **Eyes** (Parsers) and **Hands** (Packet Capture), we need to give it a **Brain** (The Policy Engine) and a **Mouth** (The Logger).
+With our system possessing **Eyes** (Parsers) and **Hands** (Packet Capture), we finally gave it a **Brain** (The Policy Engine) and a **Mouth** (The Logger).
 
-1.  **Step 7 (Policy Engine):** We will load your `config/blocked_domains.txt` into super-fast memory structures (Hash Maps). As our parsers extract DNS queries and TLS SNIs, the Brain will instantly compare them against the blocklist to see if it's a match.
-2.  **Step 8 (Logger & Main Logic):** We will tie everything together, add colored text output for the terminal (Red = Alert, Green = Normal), and create a graceful shutdown sequence that calculates statistics (like "150 DNS Packets parsed, 3 Threats Blocked") when you exit the app.
+### Step 7: `policy_engine.cpp` (The Brain)
+*   **What it is:** The logic center that decides if a packet is safe or dangerous.
+*   **Workflow:** At startup, it reads `blocked_domains.txt` and `blocked_ips.txt`. Every time the parser finishes dissecting a packet, it hands the results (IPs, HTTP Hosts, TLS SNIs, DNS Queries) to the Policy Engine.
+*   **Key Concept - O(1) Hash Sets:** If we have 10,000 blocked domains, checking a standard list takes too long (O(N) time). We load our rules into C++ `unordered_set` structures. Because they use mathematical hashing, checking if a domain is blocked takes the exact same microscopic amount of time whether we have 10 rules or 10 million rules (O(1) time).
+*   **Key Concept - Wildcard Matching:** We implemented an algorithm to catch subdomains. If `*.ads.com` is on the blocklist, the engine dynamically chops up incoming requests (e.g., `api.europe.ads.com` -> `europe.ads.com` -> `ads.com`) and tests for wildcard matches at every level.
+
+### Step 8: `logger.cpp` & `main.cpp` (The Mouth and The Assembly Line)
+*   **`logger.cpp`**: Instead of messy `cout` statements everywhere, all output routes through the Logger. It uses ANSI escape codes to paint the terminal Red for security alerts or Green for successes. It also keeps counting metrics (total packets scanned vs. alerts triggered) in the background.
+*   **`main.cpp` (The Assembly Line)**: The central Nervous System. 
+    1. It boots up, parses user command-line arguments (`-i` for live, `-f` for offline).
+    2. Initializes the Parsers, Policy Engine, and Logger.
+    3. Starts the Packet Capture loop.
+    4. Provides the **Callback Function**: A C-to-C++ bridge. Every time a packet arrives, `main.cpp` orchestrates the workflow: Send to Parser -> Send to Policy Engine -> If bad, Send to Logger.
+    5. **Graceful Shutdown**: It catches OS-level interruption signals (`Ctrl+C`). Instead of crashing instantly, it tells the capture loop to stop, calculates the final statistics from the Logger, prints a neat summary to the screen, and exits safely.

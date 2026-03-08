@@ -104,10 +104,10 @@ bool PolicyEngine::checkPacket(const ParsedPacket &packet,
     alert_out.description = "Connection originating from a blocked IP address.";
     return true; // ALERT fired!
   }
-  if (!packet.dst_ip.empty() &&
-      blocked_ips_.find(packet.dst_ip) != blocked_ips_.end()) {
+  if (!packet.dest_ip.empty() &&
+      blocked_ips_.find(packet.dest_ip) != blocked_ips_.end()) {
     alert_out.rule_type = "Blocked Destination IP";
-    alert_out.matched_value = packet.dst_ip;
+    alert_out.matched_value = packet.dest_ip;
     alert_out.description = "Connection attempted to a blocked IP address.";
     return true; // ALERT fired!
   }
